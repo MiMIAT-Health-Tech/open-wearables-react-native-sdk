@@ -9,7 +9,6 @@
     "clean": "expo-module clean",
     "lint": "expo-module lint",
     "test": "expo-module test",
-    "prepare": "expo-module prepare",
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "xed example/ios",
@@ -52,6 +51,7 @@
     "ios",
     "android",
     "src",
-    "app.plugin.js"
+    "app.plugin.js",
+    "expo-module.config.json"
   ]
 }
