@@ -64,3 +64,8 @@ export type HealthDataProvider = {
     displayName: string;
     isAvailable: boolean;
 };
+export type DailyStepTotal = {
+    localDate: string;
+    value: number;
+    zoneOffset: string;
+};

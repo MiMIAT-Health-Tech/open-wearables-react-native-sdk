@@ -1,5 +1,5 @@
 import { NativeModule } from "expo-modules-core";
-import { HealthDataType, OpenWearablesModuleEvents, HealthDataProvider, OWLogLevel } from "./OpenWearables.types";
+import { HealthDataType, OpenWearablesModuleEvents, HealthDataProvider, DailyStepTotal, OWLogLevel } from "./OpenWearables.types";
 declare class OpenWearablesModule extends NativeModule<OpenWearablesModuleEvents> {
     configure(host: string, customSyncURL?: string): void;
     signIn(userId: string, accessToken: string | null, refreshToken: string | null, apiKey: string | null): Promise<void>;
@@ -8,6 +8,7 @@ declare class OpenWearablesModule extends NativeModule<OpenWearablesModuleEvents
     restoreSession(): string;
     isSessionValid(): boolean;
     requestAuthorization(types: HealthDataType[]): Promise<boolean>;
+    getDailyStepTotals(daysBack: number): Promise<DailyStepTotal[]>;
     setSyncInterval(minutes: number): void;
     startBackgroundSync(syncDaysBack: number | null): Promise<boolean>;
     stopBackgroundSync(): Promise<void>;

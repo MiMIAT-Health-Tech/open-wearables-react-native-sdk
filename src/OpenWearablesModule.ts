@@ -3,6 +3,7 @@ import {
   HealthDataType,
   OpenWearablesModuleEvents,
   HealthDataProvider,
+  DailyStepTotal,
   OWLogLevel,
 } from "./OpenWearables.types";
 
@@ -24,6 +25,7 @@ declare class OpenWearablesModule extends NativeModule<OpenWearablesModuleEvents
 
   // MARK: - HealthKit Authorization
   requestAuthorization(types: HealthDataType[]): Promise<boolean>;
+  getDailyStepTotals(daysBack: number): Promise<DailyStepTotal[]>;
 
   // MARK: - Sync
   setSyncInterval(minutes: number): void;

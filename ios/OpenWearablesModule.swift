@@ -1,7 +1,10 @@
 import ExpoModulesCore
+import HealthKit
 import OpenWearablesHealthSDK
 
 public class OpenWearablesModule: Module {
+    private let healthStore = HKHealthStore()
+
     public func definition() -> ModuleDefinition {
         Name("OpenWearablesHealthSDK")
         
@@ -74,6 +77,129 @@ public class OpenWearablesModule: Module {
             }
         }
         
+
+        AsyncFunction("getDailyStepTotals") { (daysBack: Int, promise: Promise) in
+            let requestedDays = min(max(daysBack, 1), 90)
+            let calendar = Calendar.current
+            let now = Date()
+            let todayStart = calendar.startOfDay(for: now)
+
+            guard
+                let stepType = HKObjectType.quantityType(
+                    forIdentifier: .stepCount
+                ),
+                let startDate = calendar.date(
+                    byAdding: .day,
+                    value: -(requestedDays - 1),
+                    to: todayStart
+                ),
+                let endDate = calendar.date(
+                    byAdding: .day,
+                    value: 1,
+                    to: todayStart
+                )
+            else {
+                promise.resolve([])
+                return
+            }
+
+            let predicate = HKQuery.predicateForSamples(
+                withStart: startDate,
+                end: endDate
+            )
+
+            var interval = DateComponents()
+            interval.day = 1
+
+            let query = HKStatisticsCollectionQuery(
+                quantityType: stepType,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum,
+                anchorDate: todayStart,
+                intervalComponents: interval
+            )
+
+            query.initialResultsHandler = { _, collection, error in
+                if let error {
+                    promise.reject(error)
+                    return
+                }
+
+                guard let collection else {
+                    promise.resolve([])
+                    return
+                }
+
+                let formatter = DateFormatter()
+                formatter.calendar = calendar
+                formatter.locale = Locale(
+                    identifier: "en_US_POSIX"
+                )
+                formatter.timeZone = calendar.timeZone
+                formatter.dateFormat = "yyyy-MM-dd"
+
+                var totals: [[String: Any]] = []
+
+                collection.enumerateStatistics(
+                    from: startDate,
+                    to: endDate
+                ) { statistics, _ in
+                    guard
+                        statistics.startDate <= now,
+                        let quantity =
+                            statistics.sumQuantity()
+                    else {
+                        return
+                    }
+
+                    let secondsFromGMT =
+                        calendar.timeZone.secondsFromGMT(
+                            for: statistics.startDate
+                        )
+
+                    let sign =
+                        secondsFromGMT >= 0
+                            ? "+"
+                            : "-"
+
+                    let absoluteSeconds =
+                        abs(secondsFromGMT)
+
+                    let hours =
+                        absoluteSeconds / 3600
+
+                    let minutes =
+                        (
+                            absoluteSeconds % 3600
+                        ) / 60
+
+                    let zoneOffset = String(
+                        format: "%@%02d:%02d",
+                        sign,
+                        hours,
+                        minutes
+                    )
+
+                    totals.append([
+                        "localDate":
+                            formatter.string(
+                                from: statistics.startDate
+                            ),
+                        "value":
+                            quantity.doubleValue(
+                                for: HKUnit.count()
+                            ),
+                        "zoneOffset":
+                            zoneOffset
+                    ])
+                }
+
+                promise.resolve(totals)
+            }
+
+            self.healthStore.execute(query)
+        }
+
         // MARK: - Sync    
         Function("setSyncInterval") { (minutes: Double) in } // (not implemented in iOS SDK)
             
